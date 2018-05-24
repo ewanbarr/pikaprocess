@@ -132,6 +132,7 @@ def add_pika_process_opts(parser):
     
 def pika_process_from_opts(opts):
     log.setLevel(opts.log_level.upper())
+    logging.getLogger("pika").setLevel(opts.log_level.upper())
     process = PikaProcess(opts.host, opts.port,
                           opts.user, opts.password,
                           opts.vhost,
