@@ -107,7 +107,7 @@ class PikaProcess(object):
                     self._current = None
                     self._current_priority = 0
 
-def add_pikaprocess_opts(parser):
+def add_pika_process_opts(parser):
     parser.add_option('-H', '--host', dest='host', type=str,
                       help='RabbitMQ host', default="rabbitmq-service")
     parser.add_option('-p', '--port', dest='port', type=long,
@@ -156,7 +156,7 @@ def test(pika_process):
 if __name__ == "__main__":
     from optparse import OptionParser
     parser = OptionParser()
-    add_pikaprocess_opts(parser)
+    add_pika_process_opts(parser)
     opts,args = parser.parse_args()
     process = pika_process_from_opts(opts)
     test(process)
