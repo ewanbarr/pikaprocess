@@ -39,6 +39,7 @@ class PikaProcess(object):
                  input_q_params, success_q_params,
                  fail_q_params, sleep_time=30):
         self._current = None
+        self._current_priority = 0
         self._sleep_time = sleep_time
         self._channel_manager = PikaChannel(host, port, user, pwd, vhost)
         self._input_q_params = input_q_params
@@ -53,7 +54,8 @@ class PikaProcess(object):
     def _signal_handler(self, signum, frame):
         log.info("Signal handler called with signal {}".format(signum))
         if self._current is not None:
-            log.info("Returning current message, '{}', to the input queue".format(self._current))
+            log.info("Returning current message, '{}', to the input queue with priority {}".format(
+                self._current, self._current_priority+1))
             self._return_to_input(self._current)
         sys.exit(0)
             
@@ -63,32 +65,35 @@ class PikaProcess(object):
             if method_frame is not None:
                 if method_frame.NAME != 'Basic.GetEmpty':
                     channel.basic_ack(delivery_tag=method_frame.delivery_tag)
-                    return body
-                else:
-                    return None
+                    return method_frame, header_frame, body
+        return None, None, None
 
     def _send_success_message(self, message):
         with self._channel_manager as channel:
-            channel.basic_publish(exchange='', routing_key=self._success_q_params["queue"], body=message)
+            channel.basic_publish(exchange='', routing_key=self._success_q_params["queue"], body=message,
+                                  properties=pika.BasicProperties(delivery_mode = 2, priority=0))
 
     def _send_fail_message(self, message):
         with self._channel_manager as channel:
-            channel.basic_publish(exchange='', routing_key=self._fail_q_params["queue"], body=message)
+            channel.basic_publish(exchange='', routing_key=self._fail_q_params["queue"], body=message,
+                                  properties=pika.BasicProperties(delivery_mode = 2, priority=0))
 
     def _return_to_input(self, message):
         with self._channel_manager as channel:
-            channel.basic_publish(exchange='', routing_key=self._input_q_params["queue"], body=message)
+            channel.basic_publish(exchange='', routing_key=self._input_q_params["queue"], body=message,
+                                  properties=pika.BasicProperties(delivery_mode = 2, priority=self._current_priority+1))
             
     def process(self, message_handler):
         while True:
-            message = self._get_input_message()
+            mf, hf, message = self._get_input_message()
             if message is None:
                 log.info("No message received, going to sleep for {} seconds".format(self._sleep_time))
                 time.sleep(self._sleep_time)
                 continue
             else:
                 self._current = message
-                log.info("Received message: '{}'".format(message))
+                self._current_priority = hf.priority
+                log.info("Received message: '{}' with priority ".format(message,hf.priority))
                 try:
                     log.info("Calling handler")
                     message_handler(message)
@@ -100,6 +105,7 @@ class PikaProcess(object):
                     self._send_success_message(message)
                 finally:
                     self._current = None
+                    self._current_priority = 0
 
 def add_pikaprocess_opts(parser):
     parser.add_option('-H', '--host', dest='host', type=str,
@@ -129,9 +135,9 @@ def pika_process_from_opts(opts):
     process = PikaProcess(opts.host, opts.port,
                           opts.user, opts.password,
                           opts.vhost,
-                          {"queue":opts.input_queue},
-                          {"queue":opts.success_queue},
-                          {"queue":opts.fail_queue},
+                          {"queue":opts.input_queue, "durable": True, "arguments":{"x-max-priority":10}},
+                          {"queue":opts.success_queue, "durable": True, "arguments":{"x-max-priority":10}},
+                          {"queue":opts.fail_queue, "durable": True, "arguments":{"x-max-priority":10}},
                           opts.sleep_time)
     return process
     
