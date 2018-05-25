@@ -110,7 +110,7 @@ class PikaProcess(object):
 def add_pika_process_opts(parser):
     parser.add_option('-H', '--host', dest='host', type=str,
                       help='RabbitMQ host', default="rabbitmq-service")
-    parser.add_option('-p', '--port', dest='port', type=long,
+    parser.add_option('-p', '--port', dest='port', type=int,
                       help='RabbitMQ port', default=5672)
     parser.add_option('-u', '--user', dest='user', type=str,
                      help='RabbitMQ username', default="guest")
@@ -152,7 +152,7 @@ class PikaProducer(object):
 def add_pika_producer_opts(parser):
     parser.add_option('-H', '--host', dest='host', type=str,
                       help='RabbitMQ host', default="rabbitmq-service")
-    parser.add_option('-p', '--port', dest='port', type=long,
+    parser.add_option('-p', '--port', dest='port', type=int,
                       help='RabbitMQ port', default=5672)
     parser.add_option('-u', '--user', dest='user', type=str,
                       help='RabbitMQ username', default="guest")
