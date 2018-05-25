@@ -93,7 +93,7 @@ class PikaProcess(object):
             else:
                 self._current = message
                 self._current_priority = hf.priority
-                log.info("Received message: '{}' with priority ".format(message,hf.priority))
+                log.info("Received message: '{}' with priority level {}".format(message,hf.priority))
                 try:
                     log.info("Calling handler")
                     message_handler(message)
