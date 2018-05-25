@@ -139,7 +139,7 @@ class PikaProducer(object):
 
     def publish(self, messages, priority=0):
         with self._channel_manager as channel:
-            if hasattr(messages,"__iter__"):
+            if hasattr(messages,"__iter__") and not isinstance(messages,(str,bytes)):
                 for message in messages:
                     log.info("Publishing message '{}' to queue '{}'".format(message,self._queue_params["queue"]))
                     channel.basic_publish(exchange='', routing_key=self._queue_params["queue"], body=message,
@@ -168,7 +168,7 @@ def add_pika_producer_opts(parser):
                 
 def pika_producer_from_opts(opts):
     log.setLevel(opts.log_level.upper())
-    logging.getLogger("pika").setLevel(opts.log_level.upper())
+    logging.getLogger("pika").setLevel("WARN")
     producer = PikaProducer(opts.host, opts.port,
                            opts.user, opts.password,
                            opts.vhost,
@@ -177,7 +177,7 @@ def pika_producer_from_opts(opts):
 
 def pika_process_from_opts(opts):
     log.setLevel(opts.log_level.upper())
-    logging.getLogger("pika").setLevel(opts.log_level.upper())
+    logging.getLogger("pika").setLevel("WARN")
     process = PikaProcess(opts.host, opts.port,
                           opts.user, opts.password,
                           opts.vhost,
